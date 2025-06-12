@@ -1636,6 +1636,10 @@ With this release, availability sets are no longer modified after creation, allo
 [id="ocp-release-note-management-console-bug-fixes_{context}"]
 ==== Management Console
 
+* Previously, the Cluster Settings page would not properly render during a cluster update if the cluster's ClusterVersion lacked a `Completed` update.  With this update, the Cluster Setting page properly renders even if the ClusterVersion lacks a `Completed` update.  (link:https://issues.redhat.com/browse/OCPBUGS-49839[OCPBUGS-49839])
+
+* Previously, clicking the "Don't show again" link in the Lightspeed modal did not correctly navigate to the General *User Preference* tab when one of the other *User Preference* tabs was displayed.  After this update, clicking the "Don't show again" link correctly navigates to the *General User Preference* tab. (link:https://issues.redhat.com/browse/OCPBUGS-46511[OCPBUGS-46511])
+
 [discrete]
 [id="ocp-release-note-monitoring-bug-fixes_{context}"]
 ==== Monitoring
