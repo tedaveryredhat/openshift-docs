@@ -1,0 +1,77 @@
+// Module included in the following assemblies:
+//
+// *deployment/deployment.adoc
+
+:_mod-docs-content-type: PROCEDURE
+[id="proc-rhcl-oidc-rbac-policy_{context}"]
+= Using RBAC with an OIDC AuthPolicy custom resource
+
+[role="_abstract"]
+You can configure role-based-access to use with your OpenID Connect (OIDC) authentication by adding the roles to your `AuthPolicy` custom resource (CR).
+
+.Prerequisites
+
+* You installed {prodname} on one or more clusters.
+* You installed the {oc-first}.
+* You have write access to the {ocp} namespaces you need to work with.
+* You have access to external or on-premise DNS.
+* You created a `Gateway` object.
+* You created an `HTTPRoute` or `GRPCRoute` object.
+* You created an `AuthPolicy` CR.
+* You configured got a token from your OIDC provider.
+
+.Procedure
+
+. Add the following roles to your `AuthPolicy` CR by using the following example:
++
+.Example AuthPolicy with RBAC definitions
+[source,yaml]
+----
+apiVersion: authorino.kuadrant.io/v1
+kind: AuthPolicy
+metadata:
+  name: talker-api-protection
+spec:
+#...
+  patterns:
+    "member-role":
+    - selector: auth.identity.realm_access.roles
+      operator: incl
+      value: member
+    "admin-role":
+    - selector: auth.identity.realm_access.roles
+      operator: incl
+      value: admin
+  authorization:
+    "rbac-resources-api":
+      when:
+      - selector: context.request.http.path
+        operator: matches
+        value: ^/resources(/.*)?$
+      patternMatching:
+        patterns:
+        - patternRef: member-role
+    "rbac-delete-resource":
+      when:
+      - selector: context.request.http.path
+        operator: matches
+        value: ^/resources/\d+$
+      - selector: context.request.http.method
+        operator: eq
+        value: DELETE
+      patternMatching:
+        patterns:
+        - patternRef: admin-role
+    "rbac-admin-api":
+      when:
+      - selector: context.request.http.path
+        operator: matches
+        value: ^/admin(/.*)?$
+      patternMatching:
+        patterns:
+        - patternRef: admin-role
+----
++
+* The "rbac-resources-api" role is required for requests to `/resources[/*]`.
+* The `"rbac-delete-resource"` role is required for `DELETE` requests to `/resources/{id}.`
+* The `"rbac-admin-api"` role is required for requests to `/admin[/*]`.

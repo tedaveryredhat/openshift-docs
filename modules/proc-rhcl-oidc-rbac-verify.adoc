@@ -1,0 +1,119 @@
+// Module included in the following assemblies:
+//
+// *deployment/deployment.adoc
+
+:_mod-docs-content-type: PROCEDURE
+[id="proc-rhcl-oidc-rbac-verify_{context}"]
+= Verifying RBAC with OIDC
+
+[role="_abstract"]
+You can verify that the role-based-access you configured is working your OpenID Connect (OIDC) authentication by conducting tests.
+
+.Prerequisites
+
+* You installed {prodname} on one or more clusters.
+* You installed the {oc-first}.
+* You have write access to the {ocp} namespaces you need to work with.
+* You have access to external or on-premise DNS.
+* You created a `Gateway` object.
+* You created an `HTTPRoute` or `GRPCRoute` object.
+* You configured an `AuthPolicy` CR with role-based-access.
+
+.Procedure
+
+. Get an access token from within the cluster for the user John, who is assigned to the `member` role:
++
+[source,terminal]
+----
+$ ACCESS_TOKEN=$(oc run token --attach --rm --restart=Never -q --image=curlimages/curl -- http://keycloak.keycloak.svc.cluster.local:8080/realms/kuadrant/protocol/openid-connect/token -s -d 'grant_type=password' -d 'client_id=demo' -d 'username=john' -d 'password=p' -d 'scope=openid' | jq -r .access_token)
+----
++
+[NOTE]
+====
+If your {keycloak} server is reachable from outside the cluster, you can get the token directly. Make sure that the `hostname` set in the OIDC issuer endpoint configured in the `AuthPolicy` CR matches the one used to get the token and is reachable from within the cluster.
+====
+
+. As John, send a `GET` request to **/resources** by running the following command:
++
+[source,terminal]
+----
+$ curl -H "Authorization: Bearer $ACCESS_TOKEN" http://talker-api.127.0.0.1.nip.io:8000/resources -i
+----
++
+.Example output
+[source,text]
+----
+# HTTP/1.1 200 OK
+----
+
+. As John, send a `DELETE` request to **/resources/123** by running the following command:
++
+[source,terminal]
+----
+$ curl -H "Authorization: Bearer $ACCESS_TOKEN" -X DELETE http://talker-api.127.0.0.1.nip.io:8000/resources/123 -i
+----
++
+.Example output
+[source,text]
+----
+HTTP/1.1 403 Forbidden
+----
+
+. As John, send a `GET` request to **/admin/settings** by running the following command:
++
+[source,terminal]
+----
+$ curl -H "Authorization: Bearer $ACCESS_TOKEN" http://talker-api.127.0.0.1.nip.io:8000/admin/settings -i
+----
++
+.Example output
+[source,text]
+----
+HTTP/1.1 403 Forbidden
+----
+
+. Get an access token from within the cluster for the user Jane, who is assigned to the 'member' and 'admin' roles by running the following command:
++
+[source,terminal]
+----
+$ ACCESS_TOKEN=$(oc run token --attach --rm --restart=Never -q --image=curlimages/curl -- http://keycloak.keycloak.svc.cluster.local:8080/realms/kuadrant/protocol/openid-connect/token -s -d 'grant_type=password' -d 'client_id=demo' -d 'username=jane' -d 'password=p' -d 'scope=openid' | jq -r .access_token)
+----
+
+. As Jane, send a `GET` request to **/resources** by running the following command:
++
+[source,terminal]
+----
+$ curl -H "Authorization: Bearer $ACCESS_TOKEN" http://talker-api.127.0.0.1.nip.io:8000/resources -i
+----
++
+.Example output
+[source,text]
+----
+HTTP/1.1 200 OK
+----
+
+. As Jane, send a `DELETE` request to **/resources/123** by running the following command:
++
+[source,terminal]
+----
+$ curl -H "Authorization: Bearer $ACCESS_TOKEN" -X DELETE http://talker-api.127.0.0.1.nip.io:8000/resources/123 -i
+----
++
+.Example output
+[source,text]
+----
+HTTP/1.1 200 OK
+----
+
+. As Jane, send a `GET` request to **/admin/settings** by running the following command:
++
+[source,terminal]
+----
+$ curl -H "Authorization: Bearer $ACCESS_TOKEN" http://talker-api.127.0.0.1.nip.io:8000/admin/settings -i
+----
++
+.Example output
+[source,text]
+----
+HTTP/1.1 200 OK
+----
