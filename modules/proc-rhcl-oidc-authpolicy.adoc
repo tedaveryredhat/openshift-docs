@@ -7,7 +7,7 @@
 = Setting the OIDC AuthPolicy custom resource
 
 [role="_abstract"]
-You can configure a {prodname} `AuthPolicy` custom resource (CR) to use an OIDC provider. You can ensure that different clusters exposing the same API can authenticate with the same permissions.
+You can configure a {prodname} `AuthPolicy` custom resource (CR) to use an OIDC provider. The same API deployed to multiple clusters can authenticate with the same identity provider.
 
 [TIP]
 ====
@@ -24,6 +24,7 @@ In a zero-trust environment, every application with an `HTTPRoute` or `GRPCRoute
 * You have access to external or on-premise DNS.
 * You created a `Gateway` object.
 * You created an `HTTPRoute` or `GRPCRoute` object.
+* You have a trusted OIDC provider configured to issue tokens for your API clients.
 
 .Procedure
 
@@ -38,10 +39,6 @@ metadata:
   name: ${KUADRANT_GATEWAY_NAME}-auth
   namespace: ${KUADRANT_GATEWAY_NS}
 spec:
-  authentication:
-    "keycloak-kuadrant-realm":
-      jwt:
-        issuerUrl: http://keycloak.keycloak.svc.cluster.local:8080/realms/kuadrant
   targetRef:
     group: gateway.networking.k8s.io
     kind: Gateway
@@ -94,13 +91,16 @@ AuthPolicy has been successfully enforced
 
 . Test your `AuthPolicy` CR by running the following `curl` command:
 +
-[source,terminal]
+[source,terminal,subs="+quotes"]
 ----
-$ curl -H 'Authorization: APIKEY ndyBzreUzF4zqDQsqSPMHkRhriEOtcRx' http://talker-api.127.0.0.1.nip.io:8000/hello
+$ curl -v -s -o /dev/null -w "%{http_code}\n" $TARGET_URL
 ----
+//Q: application-level command; not sure what we need for the cluster?
++
+Replace `_<test_token>_` with your test token.
 +
 .Example output
 [source,text]
 ----
-HTTP/1.1 200 OK
+HTTP/1.1 403 Forbidden
 ----

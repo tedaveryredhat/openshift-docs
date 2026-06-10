@@ -18,7 +18,7 @@ You can configure role-based-access to use with your OpenID Connect (OIDC) authe
 * You created a `Gateway` object.
 * You created an `HTTPRoute` or `GRPCRoute` object.
 * You created an `AuthPolicy` CR.
-* You configured got a token from your OIDC provider.
+* You got a token from your OIDC provider.
 
 .Procedure
 
