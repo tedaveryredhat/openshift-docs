@@ -1,6 +1,6 @@
 // Module included in the following assemblies:
 //
-// *deployment/deployment.adoc
+// *deployment/rhcl-oids-authentication.adoc
 
 :_mod-docs-content-type: PROCEDURE
 [id="proc-rhcl-oidc-rbac-policy_{context}"]
@@ -45,33 +45,24 @@ spec:
   authorization:
     "rbac-resources-api":
       when:
-      - selector: context.request.http.path
-        operator: matches
-        value: ^/resources(/.*)?$
+      - cel: "http.path.matches('^/resources(/.*)?$')"
       patternMatching:
         patterns:
         - patternRef: member-role
     "rbac-delete-resource":
       when:
-      - selector: context.request.http.path
-        operator: matches
-        value: ^/resources/\d+$
-      - selector: context.request.http.method
-        operator: eq
-        value: DELETE
+      - cel: "http.path.matches('^/resources/\\\\d+$') && http.method == 'DELETE'"
       patternMatching:
         patterns:
         - patternRef: admin-role
     "rbac-admin-api":
       when:
-      - selector: context.request.http.path
-        operator: matches
-        value: ^/admin(/.*)?$
+      - cel: "http.path.matches('^/admin(/.*)?$')"
       patternMatching:
         patterns:
         - patternRef: admin-role
 ----
 +
-* The "rbac-resources-api" role is required for requests to `/resources[/*]`.
-* The `"rbac-delete-resource"` role is required for `DELETE` requests to `/resources/{id}.`
-* The `"rbac-admin-api"` role is required for requests to `/admin[/*]`.
+* The `member` role is required for requests to `/resources[/*]`.
+* The `admin` role is required for `DELETE` requests to `^/resources/\\\\d+$`.
+* The `"rbac-admin-api"` role is required for requests to `^/admin(/.*)?$`.

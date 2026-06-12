@@ -1,6 +1,6 @@
 // Module included in the following assemblies:
 //
-// *deployment/deployment.adoc
+// *deployment/rhcl-oids-authentication.adoc
 
 :_mod-docs-content-type: PROCEDURE
 [id="proc-set-oidc-get-token_{context}"]

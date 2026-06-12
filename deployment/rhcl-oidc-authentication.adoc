@@ -11,10 +11,12 @@ You can use OpenID Connect (OIDC) authentication with {prodname} to connect and 
 
 include::modules/proc-rhcl-oidc-authpolicy.adoc[leveloffset=+1]
 
+include::modules/proc-rhcl-oidc-authpolicy-verify.adoc[leveloffset=+2]
+
 include::modules/proc-rhcl-oidc-get-token.adoc[leveloffset=+1]
 
-include::modules/proc-rhcl-oidc-verify.adoc[leveloffset=+1]
+include::modules/proc-rhcl-oidc-verify.adoc[leveloffset=+2]
 
 include::modules/proc-rhcl-oidc-rbac-policy.adoc[leveloffset=+1]
 
-include::modules/proc-rhcl-oidc-rbac-verify.adoc[leveloffset=+1]
+include::modules/proc-rhcl-oidc-rbac-verify.adoc[leveloffset=+2]

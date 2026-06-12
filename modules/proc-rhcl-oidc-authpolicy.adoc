@@ -1,6 +1,6 @@
 // Module included in the following assemblies:
 //
-// *deployment/deployment.adoc
+// *deployment/rhcl-oids-authentication.adoc
 
 :_mod-docs-content-type: PROCEDURE
 [id="proc-set-oidc-auth-policy_{context}"]
@@ -9,12 +9,7 @@
 [role="_abstract"]
 You can configure a {prodname} `AuthPolicy` custom resource (CR) to use an OIDC provider. The same API deployed to multiple clusters can authenticate with the same identity provider.
 
-[TIP]
-====
-Apply an `AuthPolicy` custom resource (CR) with a `deny-all` policy to create a zero-trust environment. Using a zero-trust `AuthPolicy` object means that no traffic flows unless a specific allow rule is set. Every connection request must be authenticated. You can prevent the accidental exposing of services by using a `deny-all` policy.
-====
-
-In a zero-trust environment, every application with an `HTTPRoute` or `GRPCRoute` CR exposed by an application developer must also have an attached route-level `AuthPolicy` CR. You can attach multiple `AuthPolicy` objects to your `Gateway`, `HTTPRoute`, and `GRPCRoute` CRs.
+In a zero-trust environment, every application with an `HTTPRoute` or `GRPCRoute` CR exposed by an application developer must also have an attached route-level `AuthPolicy` CR. You can target either a `Gateway` or a `route` object with an `AuthPolicy` CR.
 
 .Prerequisites
 
@@ -25,82 +20,42 @@ In a zero-trust environment, every application with an `HTTPRoute` or `GRPCRoute
 * You created a `Gateway` object.
 * You created an `HTTPRoute` or `GRPCRoute` object.
 * You have a trusted OIDC provider configured to issue tokens for your API clients.
+* If your OIDC server is using a self-signed or internal cluster certificate, you injected the trusted CA bundle into your {prodname} installation.
 
 .Procedure
 
-. Create a default `AuthPolicy` CR, such as `gateway_name-auth.yaml`, with a `deny-all` setting for your `Gateway` object:
+. Create an `AuthPolicy` CR that targets an `HTTPRoute` CR and configures OIDC authentication by using the following example:
 +
-.Example AuthPolicy CR
-[source,yaml]
+.Example `AuthPolicy` CR
+[source,yaml,subs="+quotes"]
 ----
 apiVersion: kuadrant.io/v1
 kind: AuthPolicy
 metadata:
-  name: ${KUADRANT_GATEWAY_NAME}-auth
-  namespace: ${KUADRANT_GATEWAY_NS}
+  name: _<talker_api_oidc_auth>_
+  namespace: _<oidc_apps>_
 spec:
   targetRef:
     group: gateway.networking.k8s.io
-    kind: Gateway
-    name: ${KUADRANT_GATEWAY_NAME}
-  defaults:
-   when:
-     - predicate: "request.path != '/health'"
-   rules:
-    authorization:
-      deny-all:
-        opa:
-          rego: "allow = false"
-    response:
-      unauthorized:
-        headers:
-          "content-type":
-            value: application/json
-        body:
-          value: |
-            {
-              "error": "Forbidden",
-              "message": "Access denied by default by the gateway operator. If you are the administrator of the service, create a specific auth policy for the route."
-            }
+    kind: HTTPRoute
+    name: talker-api-route
+  rules:
+    authentication:
+      "oidc-idp-auth":
+        jwt:
+          issuerUrl: "https://rhbk.apps.cluster.example.com/realms/realm"
 ----
++
+* The `AuthPolicy` CR must exist in the same namespace where the `HTTPRoute` object is applied.
+* Replace the `metadata.name` parameter value with the name you want to use for your `AuthPolicy` CR.
+* The value of the `spec.targetRef.name` parameter must match the name of your `HTTPRoute` object.
+* The URL, `"https://rhbk.apps.cluster.example.com/realms/realm"`, is the base URL of your OIDC issuer, for example, {keycloak}.
 
 . Apply your `AuthPolicy` CR by running the following command:
 +
 [source,terminal,subs="+quotes"]
 ----
-$ oc apply -f _<gateway_name_auth.yaml>_
+$ oc apply -f _<talker_api_oidc_auth.yaml>_
 ----
 +
-* Replace `_<gateway_name_auth.yaml>_` with the name of your `AuthPolicy` CR.
-
-.Verification
-
-. Check that your `AuthPolicy` has `Accepted` and `Enforced` status by running the following command:
-+
-[source,terminal]
-----
-$ oc get authpolicy ${KUADRANT_GATEWAY_NAME}-auth -n ${KUADRANT_GATEWAY_NS} -o=jsonpath='{.status.conditions[?(@.type=="Accepted")].message}{"\n"}{.status.conditions[?(@.type=="Enforced")].message}'
-----
-+
-.Example output
-[source,terminal]
-----
-AuthPolicy has been accepted
-AuthPolicy has been successfully enforced
-----
-
-. Test your `AuthPolicy` CR by running the following `curl` command:
-+
-[source,terminal,subs="+quotes"]
-----
-$ curl -v -s -o /dev/null -w "%{http_code}\n" $TARGET_URL
-----
-//Q: application-level command; not sure what we need for the cluster?
-+
-Replace `_<test_token>_` with your test token.
-+
-.Example output
-[source,text]
-----
-HTTP/1.1 403 Forbidden
-----
+* Replace `_<talker_api_oidc_auth.yaml>_` with your `AuthPolicy` YAML filename.

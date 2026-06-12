@@ -1,13 +1,21 @@
 // Module included in the following assemblies:
 //
-// *deployment/deployment.adoc
+// *deployment/rhcl-oids-authentication.adoc
 
 :_mod-docs-content-type: PROCEDURE
 [id="proc-rhcl-oidc-rbac-verify_{context}"]
 = Verifying RBAC with OIDC
 
 [role="_abstract"]
-You can verify that the role-based-access you configured is working your OpenID Connect (OIDC) authentication by conducting tests.
+You can verify that the role-based-access you configured is working your OpenID Connect (OIDC) authentication by conducting tests with different user roles.
+
+The following example assumes the following setup:
+
+* A {keycloak} instance running in the keycloak namespace listening at port 8080.
+* A `kuadrant` {keycloak} realm.
+* An OAuth2 client with Direct Access grant enabled.
+* A user `john` who is assigned the `member` role and has the password `p`.
+* A user `jane` who is assigned the `member` and admin `roles` and has the  password `p`.
 
 .Prerequisites
 
@@ -21,7 +29,7 @@ You can verify that the role-based-access you configured is working your OpenID 
 
 .Procedure
 
-. Get an access token from within the cluster for the user John, who is assigned to the `member` role:
+. Get an access token from within the cluster for the user John, who is assigned to the `member` role, by running the following command:
 +
 [source,terminal]
 ----
@@ -33,24 +41,31 @@ $ ACCESS_TOKEN=$(oc run token --attach --rm --restart=Never -q --image=curlimage
 If your {keycloak} server is reachable from outside the cluster, you can get the token directly. Make sure that the `hostname` set in the OIDC issuer endpoint configured in the `AuthPolicy` CR matches the one used to get the token and is reachable from within the cluster.
 ====
 
-. As John, send a `GET` request to **/resources** by running the following command:
+. Retrieve your cluster base domain and assign it to an environment variable by running the following command:
 +
 [source,terminal]
 ----
-$ curl -H "Authorization: Bearer $ACCESS_TOKEN" http://talker-api.127.0.0.1.nip.io:8000/resources -i
+$ export CLUSTER_DOMAIN=$(oc get ingress.config/cluster -o jsonpath='{.spec.domain}')
+----
+
+. As John, send a `GET` request to **/resources** by running the following command:
++
+[source,terminal,subs="+quotes"]
+----
+$ curl -H "Authorization: Bearer $ACCESS_TOKEN" http://talker-api.apps.$CLUSTER_DOMAIN/resources -i
 ----
 +
 .Example output
 [source,text]
 ----
-# HTTP/1.1 200 OK
+HTTP/1.1 200 OK
 ----
 
 . As John, send a `DELETE` request to **/resources/123** by running the following command:
 +
-[source,terminal]
+[source,terminal,subs="+quotes"]
 ----
-$ curl -H "Authorization: Bearer $ACCESS_TOKEN" -X DELETE http://talker-api.127.0.0.1.nip.io:8000/resources/123 -i
+$ curl -H "Authorization: Bearer $ACCESS_TOKEN" -X DELETE http://talker-api.$CLUSTER_DOMAIN/resources/123 -i
 ----
 +
 .Example output
@@ -61,9 +76,9 @@ HTTP/1.1 403 Forbidden
 
 . As John, send a `GET` request to **/admin/settings** by running the following command:
 +
-[source,terminal]
+[source,terminal,subs="+quotes"]
 ----
-$ curl -H "Authorization: Bearer $ACCESS_TOKEN" http://talker-api.127.0.0.1.nip.io:8000/admin/settings -i
+$ curl -H "Authorization: Bearer $ACCESS_TOKEN" http://talker-api.$CLUSTER_DOMAIN/admin/settings -i
 ----
 +
 .Example output
@@ -81,9 +96,9 @@ $ ACCESS_TOKEN=$(oc run token --attach --rm --restart=Never -q --image=curlimage
 
 . As Jane, send a `GET` request to **/resources** by running the following command:
 +
-[source,terminal]
+[source,terminal,subs="+quotes"]
 ----
-$ curl -H "Authorization: Bearer $ACCESS_TOKEN" http://talker-api.127.0.0.1.nip.io:8000/resources -i
+$ curl -H "Authorization: Bearer $ACCESS_TOKEN" http://talker-api.$CLUSTER_DOMAIN/resources -i
 ----
 +
 .Example output
@@ -94,9 +109,9 @@ HTTP/1.1 200 OK
 
 . As Jane, send a `DELETE` request to **/resources/123** by running the following command:
 +
-[source,terminal]
+[source,terminal,subs="+quotes"]
 ----
-$ curl -H "Authorization: Bearer $ACCESS_TOKEN" -X DELETE http://talker-api.127.0.0.1.nip.io:8000/resources/123 -i
+$ curl -H "Authorization: Bearer $ACCESS_TOKEN" -X DELETE http://talker-api.$CLUSTER_DOMAIN/resources/123 -i
 ----
 +
 .Example output
@@ -107,9 +122,9 @@ HTTP/1.1 200 OK
 
 . As Jane, send a `GET` request to **/admin/settings** by running the following command:
 +
-[source,terminal]
+[source,terminal,subs="+quotes"]
 ----
-$ curl -H "Authorization: Bearer $ACCESS_TOKEN" http://talker-api.127.0.0.1.nip.io:8000/admin/settings -i
+$ curl -H "Authorization: Bearer $ACCESS_TOKEN" http://talker-api.$CLUSTER_DOMAIN/admin/settings -i
 ----
 +
 .Example output
